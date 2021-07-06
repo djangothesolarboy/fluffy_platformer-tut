@@ -17,22 +17,28 @@ player_img=pygame.image.load('assets/sprites/survivor-blue.png')
 player_img.set_colorkey((255,255,255))
 brick_img=pygame.image.load('assets/backgrounds/brick_tile/brick_one.png')
 
+# tl->top-left;tm->top-mid;tr->top-right;
+grass_tl=pygame.image.load('assets/backgrounds/grass_tile/grass_left-end.png')
+grass_tm=pygame.image.load('assets/backgrounds/grass_tile/grass_mid.png')
+grass_tr=pygame.image.load('assets/backgrounds/grass_tile/grass_right-end.png')
+# bl->bot-left;bm->bot-mid;br->bot-right;
+grass_bl=pygame.image.load('assets/backgrounds/grass_tile/grass_left-bot-end.png')
+grass_bm=pygame.image.load('assets/backgrounds/grass_tile/grass_mid-bot-end.png')
+grass_br=pygame.image.load('assets/backgrounds/grass_tile/grass_right-bot-end.png')
+
 TILE_SIZE=brick_img.get_width() # this assumes height and width are the same size(16x16)
 
-game_map=[
-	['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-	['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-	['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-	['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-	['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-	['0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0'],
-	['2','2','0','0','0','0','0','0','0','0','0','0','0','0','0','0','0','2','2'],
-	['1','1','2','2','2','2','2','2','2','2','2','2','2','2','2','2','2','1','1'],
-	['1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1'],
-	['1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1'],
-	['1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1'],
-	['1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1'],
-	['1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1','1']]
+def load_map(path):
+	f=open(path+'.txt','r')
+	data=f.read()
+	f.close()
+	data=data.split('\n')
+	game_map=[]
+	for row in data:
+		game_map.append(list(row))
+	return game_map
+
+game_map=load_map('map')
 
 def collision_test(rect,tiles): # rect is player
 	hit_list=[]
@@ -69,11 +75,16 @@ moving_left=False
 player_y_momentum=0
 air_timer=0
 
+scroll=[0,0]
+
 player_rect=pygame.Rect(50,50,player_img.get_width(),player_img.get_height())
 test_rect=pygame.Rect(100,100,100,50)
 
 while True: # game loop
 	display.fill((146,244,255)) # background color
+
+	scroll[0]+=(player_rect.x-scroll[0]-152) # keeps camera on player(x axis)
+	scroll[1]+=(player_rect.y-scroll[1]-106) # keeps camera on player(y axis)
 
 	tile_rects=[]
 	y=0
@@ -81,9 +92,17 @@ while True: # game loop
 		x=0
 		for tile in row:
 			if tile=='1':
-				display.blit(brick_img,(x*TILE_SIZE,y*TILE_SIZE))
+				display.blit(grass_tl,(x*TILE_SIZE-scroll[0],y*TILE_SIZE-scroll[1]))
 			if tile=='2':
-				display.blit(brick_img,(x*TILE_SIZE,y*TILE_SIZE))
+				display.blit(grass_tm,(x*TILE_SIZE-scroll[0],y*TILE_SIZE-scroll[1]))
+			if tile=='3':
+				display.blit(grass_tr,(x*TILE_SIZE-scroll[0],y*TILE_SIZE-scroll[1]))
+			if tile=='4':
+				display.blit(grass_bl,(x*TILE_SIZE-scroll[0],y*TILE_SIZE-scroll[1]))
+			if tile=='5':
+				display.blit(grass_bm,(x*TILE_SIZE-scroll[0],y*TILE_SIZE-scroll[1]))
+			if tile=='6':
+				display.blit(grass_br,(x*TILE_SIZE-scroll[0],y*TILE_SIZE-scroll[1]))
 			if tile!='0':
 				tile_rects.append(pygame.Rect(x*TILE_SIZE,y*TILE_SIZE,TILE_SIZE,TILE_SIZE))
 			x+=1
@@ -108,7 +127,7 @@ while True: # game loop
 	else:
 		air_timer+=1
 
-	display.blit(player_img,(player_rect.x,player_rect.y))
+	display.blit(player_img,(player_rect.x-scroll[0],player_rect.y-scroll[1]))
 
 	for event in pygame.event.get(): # event loop
 		if event.type==QUIT: # check for window quit
@@ -122,6 +141,7 @@ while True: # game loop
 				moving_right=True
 			if event.key==K_LEFT or event.key==K_a:
 				moving_left=True
+			# if event.key==K_r:
 			if event.key==K_UP or event.key==K_SPACE or event.key==K_w:
 				if air_timer<6:
 					player_y_momentum=-5
