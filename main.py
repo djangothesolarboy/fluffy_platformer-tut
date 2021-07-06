@@ -40,6 +40,9 @@ def load_map(path):
 
 game_map=load_map('map')
 
+# 	     scroll multiplier  x   y  w  h
+background_objects=[[0.25,[120,10,70,400]],[0.25,[280,30,40,400]],[0.5,[30,40,40,400]],[0.5,[130,90,100,400]],[0.5,[300,80,120,400]]]
+
 def collision_test(rect,tiles): # rect is player
 	hit_list=[]
 	for tile in tiles:
@@ -75,7 +78,7 @@ moving_left=False
 player_y_momentum=0
 air_timer=0
 
-scroll=[0,0]
+true_scroll=[0,0]
 
 player_rect=pygame.Rect(50,50,player_img.get_width(),player_img.get_height())
 test_rect=pygame.Rect(100,100,100,50)
@@ -83,8 +86,19 @@ test_rect=pygame.Rect(100,100,100,50)
 while True: # game loop
 	display.fill((146,244,255)) # background color
 
-	scroll[0]+=(player_rect.x-scroll[0]-152) # keeps camera on player(x axis)
-	scroll[1]+=(player_rect.y-scroll[1]-106) # keeps camera on player(y axis)
+	true_scroll[0]+=(player_rect.x-true_scroll[0]-152)/20 # keeps camera on player(x axis)
+	true_scroll[1]+=(player_rect.y-true_scroll[1]-106)/20 # keeps camera on player(y axis)
+	scroll=true_scroll.copy()
+	scroll[0]=int(scroll[0])
+	scroll[1]=int(scroll[1])
+
+	pygame.draw.rect(display,(7,80,75),pygame.Rect(0,120,300,80))
+	for background_object in background_objects:
+		obj_rect=pygame.Rect(background_object[1][0]-scroll[0]*background_object[0],background_object[1][1]-scroll[1]*background_object[0],background_object[1][2],background_object[1][3])
+		if background_object[0]==0.5:
+			pygame.draw.rect(display,(14,222,150),obj_rect)
+		else:
+			pygame.draw.rect(display,(9,91,85),obj_rect)
 
 	tile_rects=[]
 	y=0
