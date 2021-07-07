@@ -3,16 +3,19 @@ import pygame,sys,os
 clock=pygame.time.Clock() # clock setup
 from pygame.locals import *
 
+# my module imports
+from modules.load_map import load_map
+from modules.load_sound import load_sound
+from modules.load_anim import *
+from modules.col_mov import *
+
 pygame.init() # initiates pygame
 
-pygame.display.set_caption('fluffy tut') # window name
+pygame.display.set_caption('blue man jumps') # window name
 WIN_SIZE=(600,400) # window size
 screen=pygame.display.set_mode(WIN_SIZE,0,32) # initiate screen
-
 display=pygame.Surface((300,200))
 
-player_img=pygame.image.load('assets/sprites/survivor-blue.png')
-player_img.set_colorkey((255,255,255)) # makes color defined basically invisible(white in this case)
 brick_img=pygame.image.load('assets/backgrounds/brick_tile/brick_one.png')
 
 # tl->top-left;tm->top-mid;tr->top-right;
@@ -26,100 +29,11 @@ grass_br=pygame.image.load('assets/backgrounds/grass_tile/grass_right-bot-end.pn
 
 TILE_SIZE=brick_img.get_width() # this assumes height and width are the same size(16x16)
 
-def load_sound(name):
-	"""makes it easy to load a sound;
-	'assets'->folder name;
-	'name'->file name;"""
-	class NoneSound:
-		def play(self): pass
-	if not pygame.mixer:
-		return NoneSound()
-	fullname=os.path.join('assets/sounds',name)
-	try:
-		sound=pygame.mixer.Sound(fullname)
-	except pygame.error as message:
-		print('Cannot load sound:',fullname)
-		raise SystemExit(message)
-	return sound
-
-def load_map(path):
-	f=open(path+'.txt','r')
-	data=f.read()
-	f.close()
-	data=data.split('\n')
-	game_map=[]
-	for row in data:
-		game_map.append(list(row))
-	return game_map
-
-global anim_frames
-anim_frames={}
-
-def load_anim(path,frame_dur):
-	global anim_frames
-	anim_name=path.split('/')[-1] # will look for end path->assets/anims/player/i͟d͟l͟e͟
-	anim_frame_data=[]
-	n=0
-	for frame in frame_dur:
-		anim_frame_id=anim_name+'_'+str(n)
-		img_loc=path+'/'+anim_frame_id+'.png'
-		anim_img=pygame.image.load(img_loc)
-		anim_frames[anim_frame_id]=anim_img.copy()
-		for i in range(frame):
-			anim_frame_data.append(anim_frame_id)
-		n+=1
-	return anim_frame_data
-
-def change_action(action_var,frame,new_val):
-	if action_var!=new_val:
-		action_var=new_val
-		frame=0
-	return action_var,frame
-
-anim_db={}
-
-anim_db['idle']=load_anim('assets/anims/player/idle',[20,20])
-anim_db['run']=load_anim('assets/anims/player/run',[7,7,7,7])
-
-player_action='idle'
-player_frame=0
-player_flip=False
-
 game_map=load_map('map')
-
 jump_sound=load_sound('jump.wav')
 
 # 	     scroll multiplier  x   y  w  h
 background_objects=[[0.25,[120,10,70,400]],[0.25,[280,30,40,400]],[0.5,[30,40,40,400]],[0.5,[130,90,100,400]],[0.5,[300,80,120,400]]]
-
-def collision_test(rect,tiles): # rect is player
-	hit_list=[]
-	for tile in tiles:
-		if rect.colliderect(tile):
-			hit_list.append(tile)
-	return hit_list
-
-def move(rect,movement,tiles): # movement=[x,y]
-    collision_types={'top':False,'bottom':False,'right':False,'left':False}
-    rect.x+=movement[0]
-    hit_list=collision_test(rect, tiles)
-    for tile in hit_list:
-        if movement[0]>0:
-            rect.right=tile.left
-            collision_types['right']=True
-        elif movement[0]<0:
-            rect.left=tile.right
-            collision_types['left']=True
-    rect.y+=movement[1]
-    hit_list=collision_test(rect,tiles)
-    for tile in hit_list:
-        if movement[1]>0:
-            rect.bottom=tile.top
-            collision_types['bottom']=True
-        elif movement[1]<0:
-            rect.top=tile.bottom
-            collision_types['top']=True
-    return rect,collision_types
 
 moving_right=False
 moving_left=False
@@ -129,7 +43,7 @@ air_timer=0
 
 true_scroll=[0,0]
 
-player_rect=pygame.Rect(50,50,player_img.get_width(),player_img.get_height())
+player_rect=pygame.Rect(50,50,16,16)
 
 while True: # game loop
 	display.fill((146,244,255)) # background color
@@ -222,8 +136,8 @@ while True: # game loop
 				moving_left=True
 			# if event.key==K_r:
 			if event.key==K_UP or event.key==K_SPACE or event.key==K_w:
-				jump_sound.play()
 				if air_timer<6:
+					jump_sound.play()
 					player_y_momentum=-5
 		if event.type==KEYUP: # once key is let go
 			if event.key==K_RIGHT or event.key==K_d:
