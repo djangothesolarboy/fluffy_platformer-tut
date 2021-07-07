@@ -64,7 +64,6 @@ def load_anim(path,frame_dur):
 		anim_frame_id=anim_name+'_'+str(n)
 		img_loc=path+'/'+anim_frame_id+'.png'
 		anim_img=pygame.image.load(img_loc)
-		# anim_img.set_colorkey((255,255,255))
 		anim_frames[anim_frame_id]=anim_img.copy()
 		for i in range(frame):
 			anim_frame_data.append(anim_frame_id)
@@ -131,7 +130,6 @@ air_timer=0
 true_scroll=[0,0]
 
 player_rect=pygame.Rect(50,50,player_img.get_width(),player_img.get_height())
-# test_rect=pygame.Rect(100,100,100,50)
 
 while True: # game loop
 	display.fill((146,244,255)) # background color
@@ -184,6 +182,7 @@ while True: # game loop
 	if player_y_momentum>3:
 		player_y_momentum=3
 
+	# activates animations
 	if player_movement[0]>0:
 		player_action,player_frame=change_action(player_action,player_frame,'run')
 		player_flip=False
@@ -193,8 +192,9 @@ while True: # game loop
 		player_action,player_frame=change_action(player_action,player_frame,'run')
 		player_flip=True
 
-	player_rect,collisions=move(player_rect,player_movement,tile_rects)
+	player_rect,collisions=move(player_rect,player_movement,tile_rects) # collision detection
 
+	# checks if player is on ground before allowing player to jump
 	if collisions['bottom']:
 		player_y_momentum=0
 		air_timer=0
