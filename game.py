@@ -2,10 +2,9 @@ import pygame,sys,os
 import random
 from pygame.locals import *
 # my module imports
+import data.engine as e
 from modules.chunk_gen import *
 from modules.load_sound import load_sound
-from modules.load_anim import *
-from modules.col_mov import *
 
 WIN_SIZE=(600,400) # window size
 
@@ -16,41 +15,42 @@ pygame.display.set_caption('blue man jumps') # window name
 screen=pygame.display.set_mode(WIN_SIZE,0,32) # initiate screen
 display=pygame.Surface((300,200))
 
-brick_img=pygame.image.load('assets/backgrounds/brick_tile/brick_one.png')
+brick_img=pygame.image.load('data/imgs/backgrounds/brick_tile/brick_one.png')
 
 # tl->top-left;tm->top-mid;tr->top-right;
-grass_tl=pygame.image.load('assets/backgrounds/grass_tile/grass_left-end.png')
-grass_tm=pygame.image.load('assets/backgrounds/grass_tile/grass_mid.png')
-grass_tr=pygame.image.load('assets/backgrounds/grass_tile/grass_right-end.png')
+grass_tl=pygame.image.load('data/imgs/backgrounds/grass_tile/grass_left-end.png')
+grass_tm=pygame.image.load('data/imgs/backgrounds/grass_tile/grass_mid.png')
+grass_tr=pygame.image.load('data/imgs/backgrounds/grass_tile/grass_right-end.png')
 # bl->bot-left;bm->bot-mid;br->bot-right;
-grass_bl=pygame.image.load('assets/backgrounds/grass_tile/grass_left-bot-end.png')
-grass_bm=pygame.image.load('assets/backgrounds/grass_tile/grass_mid-bot-end.png')
-grass_br=pygame.image.load('assets/backgrounds/grass_tile/grass_right-bot-end.png')
+grass_bl=pygame.image.load('data/imgs/backgrounds/grass_tile/grass_left-bot-end.png')
+grass_bm=pygame.image.load('data/imgs/backgrounds/grass_tile/grass_mid-bot-end.png')
+grass_br=pygame.image.load('data/imgs/backgrounds/grass_tile/grass_right-bot-end.png')
 
 tile_index={1:grass_tl,2:grass_tm,3:grass_tr,4:grass_bl,5:grass_bm,6:grass_br}
 TILE_SIZE=brick_img.get_width() # this assumes height and width are the same size(16x16)
 
+e.load_anims('data/imgs/entities/')
+
 game_map={}
 jump_sound=load_sound('jump.wav')
 
-# 	     scroll multiplier  x   y  w  h
-background_objects=[[0.25,[120,10,70,400]],[0.25,[280,30,40,400]],[0.5,[30,40,40,400]],[0.5,[130,90,100,400]],[0.5,[300,80,120,400]]]
-
 moving_right=False
 moving_left=False
-
 player_y_momentum=0
 air_timer=0
 
 true_scroll=[0,0]
 
-player_rect=pygame.Rect(50,50,16,16)
+player=e.entity(50,50,16,16,'player')
+
+# 	     scroll multiplier  x   y  w  h
+background_objects=[[0.25,[120,10,70,400]],[0.25,[280,30,40,400]],[0.5,[30,40,40,400]],[0.5,[130,90,100,400]],[0.5,[300,80,120,400]]]
 
 while True: # game loop
 	display.fill((146,244,255)) # background color
 
-	true_scroll[0]+=(player_rect.x-true_scroll[0]-152)/20 # keeps camera on player(x axis)
-	true_scroll[1]+=(player_rect.y-true_scroll[1]-106)/20 # keeps camera on player(y axis)
+	true_scroll[0]+=(player.x-true_scroll[0]-152)/20 # keeps camera on player(x axis)
+	true_scroll[1]+=(player.y-true_scroll[1]-106)/20 # keeps camera on player(y axis)
 	scroll=true_scroll.copy()
 	scroll[0]=int(scroll[0])
 	scroll[1]=int(scroll[1])
@@ -89,30 +89,26 @@ while True: # game loop
 		player_y_momentum=3
 
 	# activates animations
-	if player_movement[0]>0:
-		player_action,player_frame=change_action(player_action,player_frame,'run')
-		player_flip=False
 	if player_movement[0]==0:
-		player_action,player_frame=change_action(player_action,player_frame,'idle')
+		player.set_action('idle')
+	if player_movement[0]>0:
+		player.set_flip(False)
+		player.set_action('run')
 	if player_movement[0]<0:
-		player_action,player_frame=change_action(player_action,player_frame,'run')
-		player_flip=True
+		player.set_flip(True)
+		player.set_action('run')
 
-	player_rect,collisions=move(player_rect,player_movement,tile_rects) # collision detection
+	collisions_types=player.move(player_movement,tile_rects) # collision detection
 
 	# checks if player is on ground before allowing player to jump
-	if collisions['bottom']:
+	if collisions_types['bottom']==True:
 		player_y_momentum=0
 		air_timer=0
 	else:
 		air_timer+=1
 
-	player_frame+=1
-	if player_frame>=len(anim_db[player_action]):
-		player_frame=0
-	player_img_id=anim_db[player_action][player_frame]
-	player_img=anim_frames[player_img_id]
-	display.blit(pygame.transform.flip(player_img,player_flip,False),(player_rect.x-scroll[0],player_rect.y-scroll[1])) # camera follows player
+	player.change_frame(1)
+	player.display(display,scroll)
 
 	for event in pygame.event.get(): # event loop
 		if event.type==QUIT: # check for window quit
@@ -137,7 +133,6 @@ while True: # game loop
 			if event.key==K_LEFT or event.key==K_a:
 				moving_left=False
 
-	surf=pygame.transform.scale(display,WIN_SIZE)
-	screen.blit(surf,(0,0))
+	screen.blit(pygame.transform.scale(display,WIN_SIZE),(0,0))
 	pygame.display.update() # updates display
 	clock.tick(60) # maintain 60 fps
